@@ -14,4 +14,4 @@
 # Copyright 2017 ForgeRock AS.
 #
 
-com.intensityanalytics.keyidnode.KeyIDNode
+com.intensityanalytics.keyidnode.KeyIDNodePlugin
