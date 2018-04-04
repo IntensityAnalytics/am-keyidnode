@@ -1,2 +1,1 @@
 pscp -i c:\users\jgalentine\dropbox\certificates\F5V2.ppk target\*.jar  ubuntu@forgerockdemo.intensityanalytics.com:/home/ubuntu/tomcat/webapps/openam/WEB-INF/lib/
-plink -i c:\users\jgalentine\Dropbox\certificates\F5V2.ppk root@forgerockdemo.intensityanalytics.com /root/reloadKeyID.sh

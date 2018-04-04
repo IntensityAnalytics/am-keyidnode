@@ -15,7 +15,7 @@
  */
 
 
-package com.intensityanalytics.keyidnode;
+package com.intensityanalytics.openam.auth.nodes;
 
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
@@ -49,19 +49,31 @@ public class KeyIDNode extends AbstractDecisionNode {
      */
     public interface Config {
         @Attribute(order = 100)
-        default String usernameHeader() {
-            return "X-OpenAM-Username";
-        }
+        default String url() { return ""; }
 
         @Attribute(order = 200)
-        default String passwordHeader() {
-            return "X-OpenAM-Password";
-        }
+        default String authKey() { return ""; }
 
         @Attribute(order = 300)
-        default String secretKey() {
-            return "secretKey";
-        }
+        default Integer timeout() { return 0; }
+
+        @Attribute(order = 400)
+        default Boolean strictSSL() { return true; }
+
+        @Attribute(order = 500)
+        default Boolean passiveValidation() { return false; }
+
+        @Attribute(order = 600)
+        default Boolean passiveEnrollment() { return false; }
+
+        @Attribute(order = 700)
+        default Boolean customThreshold() { return false; }
+
+        @Attribute(order = 800)
+        default Integer thresholdConfidence() { return 70; }
+
+        @Attribute(order = 900)
+        default Integer thresholdFidelity() { return 50; }
     }
 
 
@@ -78,26 +90,7 @@ public class KeyIDNode extends AbstractDecisionNode {
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        boolean hasUsername = context.request.headers.containsKey(config.usernameHeader());
-        boolean hasPassword = context.request.headers.containsKey(config.passwordHeader());
 
-        if (!hasUsername || !hasPassword) {
-            return goTo(false).build();
-        }
-
-        String secret = config.secretKey();
-        String password = context.request.headers.get(config.passwordHeader()).get(0);
-        String username = context.request.headers.get(config.usernameHeader()).get(0);
-        AMIdentity userIdentity = coreWrapper.getIdentity(username, context.sharedState.get(REALM).asString());
-        try {
-            if (secret.equals(password) && userIdentity != null && userIdentity.isExists() && userIdentity.isActive()) {
-                return goTo(true).replaceSharedState(context.sharedState.copy().put(USERNAME, username)).build();
-            }
-        } catch (IdRepoException e) {
-            debug.error("[" + DEBUG_FILE + "]: " + "Error locating user '{}' ", e);
-        } catch (SSOException e) {
-            debug.error("[" + DEBUG_FILE + "]: " + "Error locating user '{}' ", e);
-        }
         return goTo(false).build();
     }
 }

@@ -19,7 +19,7 @@
  * Needed to register the node
  */
 
-package com.intensityanalytics.keyidnode;
+package com.intensityanalytics.openam.auth.nodes;
 
 import static java.util.Arrays.asList;
 import static org.forgerock.openam.core.realms.Realm.root;
