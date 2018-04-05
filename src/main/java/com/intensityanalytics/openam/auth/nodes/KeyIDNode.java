@@ -31,13 +31,14 @@ import javax.inject.Inject;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
-/** 
- * A node that checks to see if zero-page login headers have specified username and shared key 
- * for this request. 
+/**
+ * A node that checks to see if zero-page login headers have specified username and shared key
+ * for this request.
  */
-@Node.Metadata(outcomeProvider  = AbstractDecisionNode.OutcomeProvider.class,
-               configClass      = KeyIDNode.Config.class)
-public class KeyIDNode extends AbstractDecisionNode {
+@Node.Metadata(outcomeProvider = AbstractDecisionNode.OutcomeProvider.class,
+        configClass = KeyIDNode.Config.class)
+public class KeyIDNode extends AbstractDecisionNode
+{
 
     private final Config config;
     private final CoreWrapper coreWrapper;
@@ -47,50 +48,80 @@ public class KeyIDNode extends AbstractDecisionNode {
     /**
      * Configuration for the node.
      */
-    public interface Config {
+    public interface Config
+    {
         @Attribute(order = 100)
-        default String url() { return ""; }
+        default String url()
+        {
+            return "";
+        }
 
         @Attribute(order = 200)
-        default String authKey() { return ""; }
+        default String authKey()
+        {
+            return "";
+        }
 
         @Attribute(order = 300)
-        default Integer timeout() { return 0; }
+        default Integer timeout()
+        {
+            return 0;
+        }
 
         @Attribute(order = 400)
-        default Boolean strictSSL() { return true; }
+        default Boolean strictSSL()
+        {
+            return true;
+        }
 
         @Attribute(order = 500)
-        default Boolean passiveValidation() { return false; }
+        default Boolean passiveValidation()
+        {
+            return false;
+        }
 
         @Attribute(order = 600)
-        default Boolean passiveEnrollment() { return false; }
+        default Boolean passiveEnrollment()
+        {
+            return false;
+        }
 
         @Attribute(order = 700)
-        default Boolean customThreshold() { return false; }
+        default Boolean customThreshold()
+        {
+            return false;
+        }
 
         @Attribute(order = 800)
-        default Integer thresholdConfidence() { return 70; }
+        default Integer thresholdConfidence()
+        {
+            return 70;
+        }
 
         @Attribute(order = 900)
-        default Integer thresholdFidelity() { return 50; }
+        default Integer thresholdFidelity()
+        {
+            return 50;
+        }
     }
 
 
     /**
      * Create the node.
+     *
      * @param config The service config.
      * @throws NodeProcessException If the configuration was not valid.
      */
     @Inject
-    public KeyIDNode(@Assisted Config config, CoreWrapper coreWrapper) throws NodeProcessException {
+    public KeyIDNode(@Assisted Config config, CoreWrapper coreWrapper) throws NodeProcessException
+    {
         this.config = config;
         this.coreWrapper = coreWrapper;
     }
 
     @Override
-    public Action process(TreeContext context) throws NodeProcessException {
-
+    public Action process(TreeContext context) throws NodeProcessException
+    {
         return goTo(true).build();
     }
 }

@@ -37,33 +37,39 @@ import com.sun.identity.sm.SMSException;
 /**
  * Core nodes installed by default with no engine dependencies.
  */
-public class KeyIDNodePlugin extends AbstractNodeAmPlugin {
-
+public class KeyIDNodePlugin extends AbstractNodeAmPlugin
+{
     private final AnnotatedServiceRegistry serviceRegistry;
 
     /**
      * DI-enabled constructor.
+     *
      * @param serviceRegistry A service registry instance.
      */
     @Inject
-    public KeyIDNodePlugin(AnnotatedServiceRegistry serviceRegistry) {
+    public KeyIDNodePlugin(AnnotatedServiceRegistry serviceRegistry)
+    {
         this.serviceRegistry = serviceRegistry;
     }
 
     @Override
-    public String getPluginVersion() {
+    public String getPluginVersion()
+    {
         return "1.0.0";
     }
 
     @Override
-    public void onStartup() throws PluginException {
-        for (Class<? extends Node> nodeClass : getNodes()) {
+    public void onStartup() throws PluginException
+    {
+        for (Class<? extends Node> nodeClass : getNodes())
+        {
             pluginTools.registerAuthNode(nodeClass);
         }
     }
 
     @Override
-    protected Iterable<? extends Class<? extends Node>> getNodes() {
+    protected Iterable<? extends Class<? extends Node>> getNodes()
+    {
         return asList(
                 KeyIDNode.class,
                 LoginFormNode.class
