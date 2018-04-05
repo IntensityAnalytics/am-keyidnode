@@ -65,7 +65,8 @@ public class KeyIDNodePlugin extends AbstractNodeAmPlugin {
     @Override
     protected Iterable<? extends Class<? extends Node>> getNodes() {
         return asList(
-                KeyIDNode.class
+                KeyIDNode.class,
+                LoginFormNode.class
         );
     }
 }

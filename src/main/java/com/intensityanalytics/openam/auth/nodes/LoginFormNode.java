@@ -37,12 +37,27 @@ public class LoginFormNode extends SingleOutcomeNode {
 
     @Override
     public Action process(TreeContext context) {
-        JsonValue sharedState = context.sharedState;
-        return context.getCallback(NameCallback.class)
+        JsonValue sharedState = context.sharedState.copy();
+        List<? extends Callback> callBackList = context.getAllCallbacks();
+
+        context.getCallback(NameCallback.class)
                 .map(NameCallback::getName)
+                .filter(name -> !Strings.isNullOrEmpty(name))
+                .map(name -> sharedState.put(USERNAME, name));
+
+        context.getCallback(PasswordCallback.class)
+                .map(PasswordCallback::getPassword)
+                .map(String::new)
                 .filter(password -> !Strings.isNullOrEmpty(password))
-                .map(name -> goToNext().replaceSharedState(sharedState.copy().put(USERNAME, name)).build())
-                .orElseGet(() -> collectUsernamePassword(context));
+                .map(password -> sharedState.put(PASSWORD, password));
+
+        if (sharedState.get(PASSWORD).isNotNull() && sharedState.get(USERNAME).isNotNull()){
+            return goToNext().replaceSharedState(sharedState).build();
+        }
+        else
+        {
+            return collectUsernamePassword(context);
+        }
     }
 
     private Action collectUsernamePassword(TreeContext context) {

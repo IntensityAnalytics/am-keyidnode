@@ -91,6 +91,6 @@ public class KeyIDNode extends AbstractDecisionNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
 
-        return goTo(false).build();
+        return goTo(true).build();
     }
 }
