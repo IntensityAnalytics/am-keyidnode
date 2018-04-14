@@ -8,17 +8,14 @@ import static com.intensityanalytics.openam.auth.nodes.Constants.TSDATA;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
-
 import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
-
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
-
 import org.forgerock.guava.common.base.Strings;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -26,9 +23,7 @@ import org.forgerock.openam.auth.node.api.*;
 import org.forgerock.openam.core.CoreWrapper;
 
 /**
- * A node which collects a username from the user via a name callback.
- *
- * <p>Places the result in the shared state as 'username'.</p>
+ * A node which collects the username, password and KeyID typing data from the user via callbacks.
  */
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
         configClass = LoginFormNode.Config.class)
