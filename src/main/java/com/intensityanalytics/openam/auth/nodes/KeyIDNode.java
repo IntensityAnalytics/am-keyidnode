@@ -82,7 +82,7 @@ public class KeyIDNode extends AbstractDecisionNode
         @Attribute(order = 600)
         default Boolean passiveEnrollment()
         {
-            return false;
+            return true;
         }
 
         @Attribute(order = 700)
@@ -113,6 +113,7 @@ public class KeyIDNode extends AbstractDecisionNode
     @Inject
     public KeyIDNode(@Assisted Config config, CoreWrapper coreWrapper) throws NodeProcessException
     {
+        debug.message("KeyIDNode() called");
         this.config = config;
         this.coreWrapper = coreWrapper;
         settings = createSettings();
@@ -122,50 +123,62 @@ public class KeyIDNode extends AbstractDecisionNode
     @Override
     public Action process(TreeContext context) throws NodeProcessException
     {
+        debug.message("KeyIDNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
 
         if (sharedState.get(USERNAME).isNull())
-            throw new NodeProcessException("USERNAME expected in shared state.");
+        {
+            String err = "USERNAME expected in shared state";
+            debug.error("NodeProcessException: " + err);
+            throw new NodeProcessException(err);
+        }
 
         if (sharedState.get(TSDATA).isNull())
-            throw new NodeProcessException("TSDATA expected in shared state.");
+        {
+            String err = "TSDATA expected in shared state";
+            debug.error("NodeProcessException: " + err);
+            throw new NodeProcessException(err);
+        }
 
         String username = sharedState.get(USERNAME).asString();
         String tsData = sharedState.get(TSDATA).asString();
 
-        if (settings.isPassiveEnrollment())
-        {
-            JsonObject result;
-            try
-            {
-                result = client.LoginPassiveEnrollment(username, tsData, "").get();
+        debug.warning(String.format("KeyID evaluation started for user %s", username));
+        debug.message(String.format("KeyID tsData: %s", tsData));
 
-                if (result.get("Match").getAsBoolean())
-                    return goTo(true).build();
-                else
-                    return goTo(false).build();
-            }
-            catch (Exception e)
-            {
-                throw new NodeProcessException(e);
-            }
-        }
-        else
+        JsonObject result;
+        try
         {
-            JsonObject result;
-            try
-            {
+            if (settings.isPassiveEnrollment())
+                result = client.LoginPassiveEnrollment(username, tsData, "").get();
+            else
                 result = client.EvaluateProfile(username, tsData, "").get();
 
-                if (result.get("Match").getAsBoolean())
-                    return goTo(true).build();
-                else
-                    return goTo(false).build();
+            if (result.get("Error").getAsString().isEmpty()){
+                debug.message(String.format("KeyID behavior statistics: Confidence=%f, Fidelity=%f, Profiles=%d, IsReady=%b",
+                                            result.get("Confidence").getAsDouble(),
+                                            result.get("Fidelity").getAsDouble(),
+                                            result.get("Profiles").getAsInt(),
+                                            result.get("IsReady").getAsBoolean()));
             }
-            catch (Exception e)
+            else
+                debug.error("KeyID evaluation error: " + result.get("Error").getAsString());
+
+            if (result.get("Match").getAsBoolean())
             {
-                throw new NodeProcessException(e);
+                debug.warning("KeyID behavior match success");
+                return goTo(true).build();
             }
+            else
+            {
+                debug.warning("KeyID behavior match failure");
+                return goTo(false).build();
+            }
+        }
+        catch (Exception e)
+        {
+            debug.error("NodeProcessException: " + e.toString());
+            throw new NodeProcessException(e);
         }
     }
 

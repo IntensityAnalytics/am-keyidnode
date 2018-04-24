@@ -26,7 +26,7 @@ import org.forgerock.openam.core.CoreWrapper;
  * A node which collects the username, password and KeyID typing data from the user via callbacks.
  */
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-        configClass = LoginFormNode.Config.class)
+               configClass = LoginFormNode.Config.class)
 public class LoginFormNode extends SingleOutcomeNode
 {
     private final Config config;
@@ -38,9 +38,8 @@ public class LoginFormNode extends SingleOutcomeNode
     interface Config
     {
         @Attribute(order = 100)
-        default String library()
-        {
-            return "//keyidservices.tickstream.com/library/keyid-min";
+        default String library()        {
+            return "//keyidservices.tickstream.com/library/keyid-verbose";
         }
     }
 
@@ -53,6 +52,7 @@ public class LoginFormNode extends SingleOutcomeNode
     @Inject
     public LoginFormNode(@Assisted LoginFormNode.Config config, CoreWrapper coreWrapper) throws NodeProcessException
     {
+        debug.message( "LoginFormNode() called");
         this.config = config;
         this.coreWrapper = coreWrapper;
     }
@@ -60,6 +60,7 @@ public class LoginFormNode extends SingleOutcomeNode
     @Override
     public Action process(TreeContext context)
     {
+        debug.message("LoginFormNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
 
         context.getCallback(NameCallback.class)
@@ -82,20 +83,19 @@ public class LoginFormNode extends SingleOutcomeNode
             sharedState.get(USERNAME).isNotNull() &&
             sharedState.get(TSDATA).isNotNull())
         {
-            debug.message("username: " + sharedState.get(USERNAME));
-            debug.message("password: " + sharedState.get(PASSWORD));
-            debug.message("tsData: " + sharedState.get(TSDATA));
+            debug.warning(String.format("Login form submitted for user %s", sharedState.get(USERNAME)));
+            debug.message(String.format("KeyID tsData: %s", sharedState.get(TSDATA)));
             return goToNext().replaceSharedState(sharedState).build();
         }
         else
         {
             return collectUsernamePasswordData(context);
         }
-
     }
 
     private Action collectUsernamePasswordData(TreeContext context)
     {
+        debug.message("LoginFormNode.collectUsernamePasswordData() called");
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         List<Callback> callBackList = new ArrayList<>();
         callBackList.add(new NameCallback(bundle.getString("callback.username")));
