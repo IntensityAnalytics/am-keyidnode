@@ -15,7 +15,7 @@
 -->
 # TickStream.KeyID Authentication Node
 
- **PREVIEW RELEASE** of an authentication node for ForgeRock's [Identity Platform][forgerock_platform] that protects the login process with TickStream.KeyID. With TickStream.KeyID a user's typing behavior can be passively or actively enrolled and evaluated to provide an advanced second factor behavioral biometric. For more information visit <http://www.intensityanalytics.com> 
+**PREVIEW RELEASE** of an authentication node for ForgeRock's [Identity Platform][forgerock_platform] that protects the login process with TickStream.KeyID. With TickStream.KeyID a user's typing behavior can be passively or actively enrolled and evaluated to provide an advanced second factor behavioral biometric. For more information visit <http://www.intensityanalytics.com>
 
 For evaluation licenses please contact <sales@intensityanalytics.com>
 
@@ -23,7 +23,7 @@ For evaluation licenses please contact <sales@intensityanalytics.com>
 
 The code in this repository has binary dependencies that live in the ForgeRock maven repository. Maven can be configured to authenticate to this repository by following the following [ForgeRock Knowledge Base Article](https://backstage.forgerock.com/knowledge/kb/article/a74096897).
 
-##Installation##
+## Installation ##
 Copy the .jar file from the ../target directory into the ../webapps/openam/WEB-INF/lib directory where AM is deployed. Restart the AM service to load the TickStream.KeyID authentication tree node. The TickStream.KeyID components will then be available for use in the Authenticaton Tree designer.
 
 ## USAGE ##
