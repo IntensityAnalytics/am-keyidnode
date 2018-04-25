@@ -18,6 +18,9 @@
  *
  * Needed to register the node
  */
+/*
+ * Portions copyright 2018 Intensity Analytics Corporation
+ */
 
 package com.intensityanalytics.openam.auth.nodes;
 

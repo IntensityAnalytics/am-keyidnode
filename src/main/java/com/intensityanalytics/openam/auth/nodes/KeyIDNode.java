@@ -13,6 +13,9 @@
  *
  * Copyright 2017 ForgeRock AS.
  */
+/*
+ * Portions copyright 2018 Intensity Analytics Corporation
+ */
 
 package com.intensityanalytics.openam.auth.nodes;
 
@@ -26,6 +29,10 @@ import org.forgerock.openam.core.CoreWrapper;
 import javax.inject.Inject;
 import com.intensityanalytics.keyid.*;
 import com.google.gson.JsonObject;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 import static com.intensityanalytics.openam.auth.nodes.Constants.TSDATA;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
@@ -102,6 +109,9 @@ public class KeyIDNode extends AbstractDecisionNode
         {
             return 50;
         }
+
+        @Attribute(order = 1000)
+        default Boolean grantOnError() {return false;}
     }
 
     /**
@@ -120,68 +130,71 @@ public class KeyIDNode extends AbstractDecisionNode
         client = new KeyIDClient(settings);
     }
 
+    /**
+     * Process a login using TickStream.KeyID.
+     */
     @Override
     public Action process(TreeContext context) throws NodeProcessException
     {
         debug.message("KeyIDNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
-
-        if (sharedState.get(USERNAME).isNull())
-        {
-            String err = "USERNAME expected in shared state";
-            debug.error("NodeProcessException: " + err);
-            throw new NodeProcessException(err);
-        }
-
-        if (sharedState.get(TSDATA).isNull())
-        {
-            String err = "TSDATA expected in shared state";
-            debug.error("NodeProcessException: " + err);
-            throw new NodeProcessException(err);
-        }
-
-        String username = sharedState.get(USERNAME).asString();
-        String tsData = sharedState.get(TSDATA).asString();
-
-        debug.warning(String.format("KeyID evaluation started for user %s", username));
-        debug.message(String.format("KeyID tsData: %s", tsData));
-
         JsonObject result;
+
         try
         {
-            if (settings.isPassiveEnrollment())
-                result = client.LoginPassiveEnrollment(username, tsData, "").get();
-            else
-                result = client.EvaluateProfile(username, tsData, "").get();
+            String username = sharedState.get(USERNAME).asString();
+            String tsData = sharedState.get(TSDATA).asString();
+            debug.warning(String.format("KeyID evaluation started for user %s", username));
+            debug.message(String.format("KeyID tsData: %s", tsData));
 
-            if (result.get("Error").getAsString().isEmpty()){
-                debug.message(String.format("KeyID behavior statistics: Confidence=%f, Fidelity=%f, Profiles=%d, IsReady=%b",
-                                            result.get("Confidence").getAsDouble(),
-                                            result.get("Fidelity").getAsDouble(),
-                                            result.get("Profiles").getAsInt(),
-                                            result.get("IsReady").getAsBoolean()));
-            }
-            else
-                debug.error("KeyID evaluation error: " + result.get("Error").getAsString());
+            result = client.Login(username, tsData, "").get();
 
-            if (result.get("Match").getAsBoolean())
+            if (!result.get("Error").getAsString().isEmpty())
+                throw new NodeProcessException("KeyID Error: " + result.get("Error").getAsString());
+
+            debug.message(String.format("KeyID behavior statistics: Match=%b, Confidence=%f, Fidelity=%f, Profiles=%d, IsReady=%b",
+                                        result.get("Match").getAsBoolean(),
+                                        result.get("Confidence").getAsDouble(),
+                                        result.get("Fidelity").getAsDouble(),
+                                        result.get("Profiles").getAsInt(),
+                                        result.get("IsReady").getAsBoolean()));
+
+            // handle successful match and whether passive validation is enabled
+            if (result.get("Match").getAsBoolean() || config.passiveValidation())
             {
-                debug.warning("KeyID behavior match success");
+                String msg = String.format("KeyID behavior match %b, passive validation %b",
+                                           result.get("Match").getAsBoolean(),
+                                           config.passiveEnrollment());
+                debug.warning(msg);
                 return goTo(true).build();
-            }
-            else
-            {
-                debug.warning("KeyID behavior match failure");
-                return goTo(false).build();
             }
         }
         catch (Exception e)
         {
-            debug.error("NodeProcessException: " + e.toString());
-            throw new NodeProcessException(e);
+            // write full error detail to log
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            debug.error("NodeProcessException: " + exceptionAsString);
+
+            if(config.grantOnError())
+            {
+                debug.error("Access grant on error");
+                return goTo(true).build();
+            }
+            else
+                throw new NodeProcessException("An error occured, please try again.");
         }
+
+        // default case is to return failure, tricky because we're using exceptions to return information to the user and as actual exceptions
+        debug.warning("KeyID behavior match failure");
+        throw new NodeProcessException("The typing effort does not match the profile.");
     }
 
+    /**
+     * Create a KeyIDSettings object using settings configured for authentication tree node.
+     * @return KeyIDSettings object
+     */
     private KeyIDSettings createSettings()
     {
         KeyIDSettings settings = new KeyIDSettings();
@@ -189,12 +202,10 @@ public class KeyIDNode extends AbstractDecisionNode
         settings.setLicense(config.authKey());
         settings.setCustomThreshold(config.customThreshold());
         settings.setPassiveEnrollment(config.passiveEnrollment());
-        settings.setPassiveValidation(config.passiveValidation());
         settings.setThresholdConfidence(config.thresholdConfidence());
         settings.setThresholdFidelity(config.thresholdFidelity());
         settings.setStrictSSL(config.strictSSL());
         settings.setTimeout(config.timeout());
-
         return settings;
     }
 }
