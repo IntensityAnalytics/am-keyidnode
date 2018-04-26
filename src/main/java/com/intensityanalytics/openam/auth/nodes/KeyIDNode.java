@@ -21,7 +21,6 @@ package com.intensityanalytics.openam.auth.nodes;
 
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.shared.debug.Debug;
-import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
@@ -111,7 +110,16 @@ public class KeyIDNode extends AbstractDecisionNode
         }
 
         @Attribute(order = 1000)
-        default Boolean grantOnError() {return false;}
+        default Boolean grantOnError()
+        {
+            return false;
+        }
+
+        @Attribute(order = 1100)
+        default Boolean resetProfile()
+        {
+            return false;
+        }
     }
 
     /**
@@ -166,6 +174,13 @@ public class KeyIDNode extends AbstractDecisionNode
                                            result.get("Match").getAsBoolean(),
                                            config.passiveEnrollment());
                 debug.warning(msg);
+
+                if (config.resetProfile())
+                {
+                    debug.warning(String.format("Resetting KeyID profile for %s", username));
+                    client.RemoveProfile(username, tsData, "").get();
+                }
+
                 return goTo(true).build();
             }
         }

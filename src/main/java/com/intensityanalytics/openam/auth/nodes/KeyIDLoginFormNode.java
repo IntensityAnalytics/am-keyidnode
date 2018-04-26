@@ -45,13 +45,13 @@ import org.forgerock.openam.core.CoreWrapper;
  * A node which collects the username, password and KeyID typing data from the user via callbacks.
  */
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-               configClass = LoginFormNode.Config.class)
-public class LoginFormNode extends SingleOutcomeNode
+               configClass = KeyIDLoginFormNode.Config.class)
+public class KeyIDLoginFormNode extends SingleOutcomeNode
 {
     private final Config config;
     private final CoreWrapper coreWrapper;
-    private static final String BUNDLE = "com/intensityanalytics/openam/auth/nodes/LoginFormNode";
-    private final static String DEBUG_FILE = "LoginFormNode";
+    private static final String BUNDLE = "com/intensityanalytics/openam/auth/nodes/KeyIDLoginFormNode";
+    private final static String DEBUG_FILE = "KeyIDLoginFormNode";
     protected Debug debug = Debug.getInstance(DEBUG_FILE);
 
     interface Config
@@ -69,9 +69,9 @@ public class LoginFormNode extends SingleOutcomeNode
      * @throws NodeProcessException If the configuration was not valid.
      */
     @Inject
-    public LoginFormNode(@Assisted LoginFormNode.Config config, CoreWrapper coreWrapper) throws NodeProcessException
+    public KeyIDLoginFormNode(@Assisted KeyIDLoginFormNode.Config config, CoreWrapper coreWrapper) throws NodeProcessException
     {
-        debug.message( "LoginFormNode() called");
+        debug.message( "KeyIDLoginFormNode() called");
         this.config = config;
         this.coreWrapper = coreWrapper;
     }
@@ -79,7 +79,7 @@ public class LoginFormNode extends SingleOutcomeNode
     @Override
     public Action process(TreeContext context)
     {
-        debug.message("LoginFormNode.process() called");
+        debug.message("KeyIDLoginFormNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
 
         context.getCallback(NameCallback.class)
@@ -114,7 +114,7 @@ public class LoginFormNode extends SingleOutcomeNode
 
     private Action collectUsernamePasswordData(TreeContext context)
     {
-        debug.message("LoginFormNode.collectUsernamePasswordData() called");
+        debug.message("KeyIDLoginFormNode.collectUsernamePasswordData() called");
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         List<Callback> callBackList = new ArrayList<>();
         callBackList.add(new NameCallback(bundle.getString("callback.username")));

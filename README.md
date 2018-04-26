@@ -28,6 +28,7 @@ Copy the .jar file from the ../target directory into the ../webapps/openam/WEB-I
 
 ## USAGE ##
 
+### AUTHENTICATING ###
 ![](./images/authtree.png)
 
 To protect logins with TickStream.KeyID you must configure the Authentication Tree to use the TickStream.KeyID Login Form and TickStream.KeyID nodes.
@@ -47,7 +48,21 @@ Passive Enrollment | Collect and evaluate typing behavior over subsequent logins
 Custom Threshold | Provide a custom threshold different than the TickStream.KeyID server setting
 Threshold Confidence | Custom threshold confidence value (integer)
 Threshold Fidelity | Custom threshold fidelity value (integer)
-Grant On Error | Allow access if there is an error communicating with the TickStream.KeyID web service 
+Grant On Error | Allow access if there is an error communicating with the TickStream.KeyID web service
+Reset Profile | Reset TickStream.KeyID profile after verification
+
+### PASSWORD RESETS ###
+
+![](./images/resetauthtree.png)
+
+When a user's password is reset, the user's TickStream.KeyID profile must also be removed using the TickStream.KeyID web service client. Because the password reset process is environment and deployment specific, we only provide a simple scenario using authentication trees for demonstration purposes.
+
+You can construct an password reset authentication tree using TickStream.KeyID components and the ForgeRock [Set Profile Authentication Node](https://github.com/ForgeRock/set-profile-property-auth-tree-node)
+
+### DELETING A USER ###
+
+When a user is deleted from an authentication store the user's TickStream.KeyID profile should also be removed using the TickStream.KeyID web service client. This process is also enviornment and deployment specific.
+
 
 ## TROUBLESHOOTING ##
 
