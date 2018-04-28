@@ -41,28 +41,31 @@ The TickStream.KeyID node evaluates the login data captured by the login form. T
 
 Option | Description
 -- | --
-Timeout | TickStream.KeyID web service timeout
-Strict SSL | Enforce web service SSL certificates
+Connection Timeout | TickStream.KeyID web service connection timeout in milliseconds
+Reset Profile | Reset TickStream.KeyID profile after verification
 Passive Validation | Collect and evaluate typing behavior but always allow the user access
-Passive Enrollment | Collect and evaluate typing behavior over subsequent logins
+Login Enrollment | Save profile data after evaluation and continue the enrollment process
+Passive Enrollment | Save profile data after evaluation and continue the login process
 Custom Threshold | Provide a custom threshold different than the TickStream.KeyID server setting
 Threshold Confidence | Custom threshold confidence value (integer)
 Threshold Fidelity | Custom threshold fidelity value (integer)
 Grant On Error | Allow access if there is an error communicating with the TickStream.KeyID web service
-Reset Profile | Reset TickStream.KeyID profile after verification
+
+### ENROLLMENT ###
+
+![](./images/activeauthtree.png)
+
+Passwords used for enrollment should be at least 10 characters. With the TickStream.KeyID Auth Tree Node you may configure enrollment to be 'active' or 'passive'. In the active scenario shown above, a user will be prompted to enter their password repeatedly until the behavior profile is complete. In a passive scenario, the user profile will be built over subsequent logins.
 
 ### PASSWORD RESETS ###
 
 ![](./images/resetauthtree.png)
 
-When a user's password is reset, the user's TickStream.KeyID profile must also be removed using the TickStream.KeyID web service client. Because the password reset process is environment and deployment specific, we only provide a simple scenario using authentication trees for demonstration purposes.
+When a user's password is reset, the user's TickStream.KeyID profile must also be reset using the TickStream.KeyID web service. Because the password reset process is environment and deployment specific, we only provide a simple scenario using authentication trees for demonstration purposes. 
 
-You can construct an password reset authentication tree using TickStream.KeyID components and the ForgeRock [Set Profile Authentication Node](https://github.com/ForgeRock/set-profile-property-auth-tree-node)
+You can construct an password reset authentication tree using TickStream.KeyID components and the ForgeRock [Set Profile Property Authentication Node.](https://github.com/ForgeRock/set-profile-property-auth-tree-node) Construct an authentication tree as shown in the above diagram. Configure the TickStream.KeyID node normally and enable the `Reset Profile` option and disable Profile and Passive enrollment. Configure the Set Profile Property node to have a key of `userPassword` and a value of `password`.
 
-### DELETING A USER ###
-
-When a user is deleted from an authentication store the user's TickStream.KeyID profile should also be removed using the TickStream.KeyID web service client. This process is also enviornment and deployment specific.
-
+When accessing the authentication tree, the user will be prompted to provide their username and password, the password and typing behavior will be validated, the user prompted for a new password and the KeyID profile and user password changed.
 
 ## TROUBLESHOOTING ##
 

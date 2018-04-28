@@ -22,7 +22,7 @@ package com.intensityanalytics.openam.auth.nodes;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
-import static com.intensityanalytics.openam.auth.nodes.Constants.TSDATA;
+import static com.intensityanalytics.openam.auth.nodes.Constants.*;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -45,19 +45,20 @@ import org.forgerock.openam.core.CoreWrapper;
  * A node which collects the username, password and KeyID typing data from the user via callbacks.
  */
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-               configClass = KeyIDLoginFormNode.Config.class)
-public class KeyIDLoginFormNode extends SingleOutcomeNode
+               configClass = KeyIDLoginCollectorNode.Config.class)
+public class KeyIDLoginCollectorNode extends SingleOutcomeNode
 {
     private final Config config;
     private final CoreWrapper coreWrapper;
-    private static final String BUNDLE = "com/intensityanalytics/openam/auth/nodes/KeyIDLoginFormNode";
-    private final static String DEBUG_FILE = "KeyIDLoginFormNode";
+    private static final String BUNDLE = "com/intensityanalytics/openam/auth/nodes/KeyIDLoginCollectorNode";
+    private final static String DEBUG_FILE = "KeyIDLoginCollectorNode";
     protected Debug debug = Debug.getInstance(DEBUG_FILE);
 
     interface Config
     {
         @Attribute(order = 100)
-        default String library()        {
+        default String library()
+        {
             return "//keyidservices.tickstream.com/library/keyid-verbose";
         }
     }
@@ -69,9 +70,9 @@ public class KeyIDLoginFormNode extends SingleOutcomeNode
      * @throws NodeProcessException If the configuration was not valid.
      */
     @Inject
-    public KeyIDLoginFormNode(@Assisted KeyIDLoginFormNode.Config config, CoreWrapper coreWrapper) throws NodeProcessException
+    public KeyIDLoginCollectorNode(@Assisted KeyIDLoginCollectorNode.Config config, CoreWrapper coreWrapper) throws NodeProcessException
     {
-        debug.message( "KeyIDLoginFormNode() called");
+        debug.message( "KeyIDLoginCollectorNode() called");
         this.config = config;
         this.coreWrapper = coreWrapper;
     }
@@ -79,7 +80,7 @@ public class KeyIDLoginFormNode extends SingleOutcomeNode
     @Override
     public Action process(TreeContext context)
     {
-        debug.message("KeyIDLoginFormNode.process() called");
+        debug.message("KeyIDLoginCollectorNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
 
         context.getCallback(NameCallback.class)
@@ -102,7 +103,7 @@ public class KeyIDLoginFormNode extends SingleOutcomeNode
             sharedState.get(USERNAME).isNotNull() &&
             sharedState.get(TSDATA).isNotNull())
         {
-            debug.warning(String.format("Login form submitted for user %s", sharedState.get(USERNAME)));
+            debug.warning(String.format("Login submitted for user %s", sharedState.get(USERNAME)));
             debug.message(String.format("KeyID tsData: %s", sharedState.get(TSDATA)));
             return goToNext().replaceSharedState(sharedState).build();
         }
@@ -114,7 +115,7 @@ public class KeyIDLoginFormNode extends SingleOutcomeNode
 
     private Action collectUsernamePasswordData(TreeContext context)
     {
-        debug.message("KeyIDLoginFormNode.collectUsernamePasswordData() called");
+        debug.message("KeyIDLoginCollectorNode.collectUsernamePasswordData() called");
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         List<Callback> callBackList = new ArrayList<>();
         callBackList.add(new NameCallback(bundle.getString("callback.username")));
@@ -124,14 +125,4 @@ public class KeyIDLoginFormNode extends SingleOutcomeNode
 
         return send(callBackList).build();
     }
-
-    private static final String KEYIDSCRIPT = "var script = document.createElement('script');\n" +
-                                              "script.onload = function () {\n" +
-                                              "    $('[name=\"callback_1\"]').attr('id', 'idToken1');\n" +
-                                              "    tsBindControl('idToken1', bandType.KeyID, true);\n" +
-                                              "    $('#loginButton_0').click(function(){populateControlWithKeyDataConcatenated('tsData');});\n" +
-                                              "};\n" +
-                                              "script.src = '%s'\n" +
-                                              "\n" +
-                                              "document.body.appendChild(script);";
 }

@@ -25,21 +25,22 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
 import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.guava.common.collect.ImmutableList;
 import javax.inject.Inject;
 import com.intensityanalytics.keyid.*;
 import com.google.gson.JsonObject;
-
+import org.forgerock.util.i18n.PreferredLocales;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
+import java.util.List;
+import java.util.ResourceBundle;
 import static com.intensityanalytics.openam.auth.nodes.Constants.TSDATA;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-
 
 /**
  * A node that validates a user's typing behavior using TickStream.KeyID
  */
-@Node.Metadata(outcomeProvider = AbstractDecisionNode.OutcomeProvider.class,
+@Node.Metadata(outcomeProvider = KeyIDNode.OutcomeProvider.class,
         configClass = KeyIDNode.Config.class)
 public class KeyIDNode extends AbstractDecisionNode
 {
@@ -48,7 +49,10 @@ public class KeyIDNode extends AbstractDecisionNode
     private final Config config;
     private final CoreWrapper coreWrapper;
     private final static String DEBUG_FILE = "KeyIDNode";
-    protected Debug debug = Debug.getInstance(DEBUG_FILE);
+    private Debug debug = Debug.getInstance(DEBUG_FILE);
+    private final static String TRUE_OUTCOME = "true";
+    private final static String FALSE_OUTCOME = "false";
+    private final static String ENROLL_OUTCOME = "enroll";
 
     /**
      * Configuration for the node.
@@ -70,13 +74,13 @@ public class KeyIDNode extends AbstractDecisionNode
         @Attribute(order = 300)
         default Integer timeout()
         {
-            return 0;
+            return 5000;
         }
 
         @Attribute(order = 400)
-        default Boolean strictSSL()
+        default Boolean resetProfile()
         {
-            return true;
+            return false;
         }
 
         @Attribute(order = 500)
@@ -86,37 +90,37 @@ public class KeyIDNode extends AbstractDecisionNode
         }
 
         @Attribute(order = 600)
-        default Boolean passiveEnrollment()
+        default Boolean loginEnrollment()
         {
             return true;
         }
 
         @Attribute(order = 700)
-        default Boolean customThreshold()
+        default Boolean passiveEnrollment()
         {
             return false;
         }
 
         @Attribute(order = 800)
+        default Boolean customThreshold()
+        {
+            return false;
+        }
+
+        @Attribute(order = 900)
         default Integer thresholdConfidence()
         {
             return 70;
         }
 
-        @Attribute(order = 900)
+        @Attribute(order = 1000)
         default Integer thresholdFidelity()
         {
             return 50;
         }
 
-        @Attribute(order = 1000)
-        default Boolean grantOnError()
-        {
-            return false;
-        }
-
         @Attribute(order = 1100)
-        default Boolean resetProfile()
+        default Boolean grantOnError()
         {
             return false;
         }
@@ -147,7 +151,7 @@ public class KeyIDNode extends AbstractDecisionNode
         debug.message("KeyIDNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
         JsonObject result;
-
+        
         try
         {
             String username = sharedState.get(USERNAME).asString();
@@ -167,12 +171,20 @@ public class KeyIDNode extends AbstractDecisionNode
                                         result.get("Profiles").getAsInt(),
                                         result.get("IsReady").getAsBoolean()));
 
+            // handle active enrollment
+            if (config.loginEnrollment() &&
+                !config.passiveEnrollment() &&
+                !result.get("IsReady").getAsBoolean())
+            {
+                return Action.goTo(ENROLL_OUTCOME).build();
+            }
+
             // handle successful match and whether passive validation is enabled
             if (result.get("Match").getAsBoolean() || config.passiveValidation())
             {
                 String msg = String.format("KeyID behavior match %b, passive validation %b",
                                            result.get("Match").getAsBoolean(),
-                                           config.passiveEnrollment());
+                                           config.passiveValidation());
                 debug.warning(msg);
 
                 if (config.resetProfile())
@@ -181,7 +193,7 @@ public class KeyIDNode extends AbstractDecisionNode
                     client.RemoveProfile(username, tsData, "").get();
                 }
 
-                return goTo(true).build();
+                return Action.goTo(TRUE_OUTCOME).build();
             }
         }
         catch (Exception e)
@@ -195,15 +207,15 @@ public class KeyIDNode extends AbstractDecisionNode
             if(config.grantOnError())
             {
                 debug.error("Access grant on error");
-                return goTo(true).build();
+                return Action.goTo(TRUE_OUTCOME).build();
             }
             else
                 throw new NodeProcessException("An error occured, please try again.");
         }
 
-        // default case is to return failure, tricky because we're using exceptions to return information to the user and as actual exceptions
+        // default case is to return failure, rely on default login failed error message
         debug.warning("KeyID behavior match failure");
-        throw new NodeProcessException("The typing effort does not match the profile.");
+        return Action.goTo(FALSE_OUTCOME).build();
     }
 
     /**
@@ -216,11 +228,26 @@ public class KeyIDNode extends AbstractDecisionNode
         settings.setUrl(config.url());
         settings.setLicense(config.authKey());
         settings.setCustomThreshold(config.customThreshold());
-        settings.setPassiveEnrollment(config.passiveEnrollment());
+        settings.setLoginEnrollment(config.loginEnrollment());
         settings.setThresholdConfidence(config.thresholdConfidence());
         settings.setThresholdFidelity(config.thresholdFidelity());
-        settings.setStrictSSL(config.strictSSL());
         settings.setTimeout(config.timeout());
         return settings;
+    }
+
+    /**
+     * KeyIDNode custom outcome provider.
+     */
+    static class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+        private static final String BUNDLE = KeyIDNode.class.getName().replace(".", "/");
+
+        @Override
+        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+            ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE, OutcomeProvider.class.getClassLoader());
+            return ImmutableList.of(
+            new Outcome(TRUE_OUTCOME, bundle.getString("trueOutcome")),
+            new Outcome(FALSE_OUTCOME, bundle.getString("falseOutcome")),
+            new Outcome(ENROLL_OUTCOME, bundle.getString("enrollOutcome")));
+        }
     }
 }

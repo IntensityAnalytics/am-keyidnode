@@ -71,7 +71,8 @@ public class KeyIDNodePlugin extends AbstractNodeAmPlugin
     {
         return asList(
                 KeyIDNode.class,
-                KeyIDLoginFormNode.class
+                KeyIDLoginCollectorNode.class,
+                KeyIDPasswordCollectorNode.class
         );
     }
 }
