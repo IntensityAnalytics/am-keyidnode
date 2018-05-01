@@ -30,11 +30,10 @@ import javax.inject.Inject;
 import com.intensityanalytics.keyid.*;
 import com.google.gson.JsonObject;
 import org.forgerock.util.i18n.PreferredLocales;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.List;
 import java.util.ResourceBundle;
 import static com.intensityanalytics.openam.auth.nodes.Constants.TSDATA;
+import static com.intensityanalytics.openam.auth.nodes.Utility.*;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
 /**
@@ -150,59 +149,38 @@ public class KeyIDNode extends AbstractDecisionNode
     {
         debug.message("KeyIDNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
-        JsonObject result;
-        
+
         try
         {
             String username = sharedState.get(USERNAME).asString();
             String tsData = sharedState.get(TSDATA).asString();
-            debug.warning(String.format("KeyID evaluation started for user %s", username));
-            debug.message(String.format("KeyID tsData: %s", tsData));
-
-            result = client.Login(username, tsData, "").get();
-
-            if (!result.get("Error").getAsString().isEmpty())
-                throw new NodeProcessException("KeyID Error: " + result.get("Error").getAsString());
-
-            debug.message(String.format("KeyID behavior statistics: Match=%b, Confidence=%f, Fidelity=%f, Profiles=%d, IsReady=%b",
-                                        result.get("Match").getAsBoolean(),
-                                        result.get("Confidence").getAsDouble(),
-                                        result.get("Fidelity").getAsDouble(),
-                                        result.get("Profiles").getAsInt(),
-                                        result.get("IsReady").getAsBoolean()));
+            JsonObject loginResult = keyIDLogin(username, tsData);
 
             // handle active enrollment
             if (config.loginEnrollment() &&
                 !config.passiveEnrollment() &&
-                !result.get("IsReady").getAsBoolean())
+                !loginResult.get("IsReady").getAsBoolean())
             {
                 return Action.goTo(ENROLL_OUTCOME).build();
             }
 
             // handle successful match and whether passive validation is enabled
-            if (result.get("Match").getAsBoolean() || config.passiveValidation())
+            if (loginResult.get("Match").getAsBoolean() || config.passiveValidation())
             {
                 String msg = String.format("KeyID behavior match %b, passive validation %b",
-                                           result.get("Match").getAsBoolean(),
+                                           loginResult.get("Match").getAsBoolean(),
                                            config.passiveValidation());
                 debug.warning(msg);
 
                 if (config.resetProfile())
-                {
-                    debug.warning(String.format("Resetting KeyID profile for %s", username));
-                    client.RemoveProfile(username, tsData, "").get();
-                }
+                    keyIDResetProfile(username, tsData);
 
                 return Action.goTo(TRUE_OUTCOME).build();
             }
         }
         catch (Exception e)
         {
-            // write full error detail to log
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            String exceptionAsString = sw.toString();
-            debug.error("NodeProcessException: " + exceptionAsString);
+            debug.error("Exception: " + exceptionAsString(e));
 
             if(config.grantOnError())
             {
@@ -216,6 +194,45 @@ public class KeyIDNode extends AbstractDecisionNode
         // default case is to return failure, rely on default login failed error message
         debug.warning("KeyID behavior match failure");
         return Action.goTo(FALSE_OUTCOME).build();
+    }
+
+    /**
+     * Executes the KeyID login process and checks the result for errors.
+     * @param username  username
+     * @param tsData    tsData
+     * @return          KeyID login result.
+     * @throws Exception
+     */
+    private JsonObject keyIDLogin(String username, String tsData) throws Exception
+    {
+        debug.warning(String.format("KeyID evaluation started for user %s", username));
+        debug.message(String.format("KeyID tsData: %s", tsData));
+
+        JsonObject result = client.Login(username, tsData, "").get();
+
+        if (!result.get("Error").getAsString().isEmpty())
+            throw new NodeProcessException("KeyID Error: " + result.get("Error").getAsString());
+
+        debug.message(String.format("KeyID behavior statistics: Match=%b, Confidence=%f, Fidelity=%f, Profiles=%d, IsReady=%b",
+                                    result.get("Match").getAsBoolean(),
+                                    result.get("Confidence").getAsDouble(),
+                                    result.get("Fidelity").getAsDouble(),
+                                    result.get("Profiles").getAsInt(),
+                                    result.get("IsReady").getAsBoolean()));
+        return result;
+    }
+
+    /**
+     * Resets a KeyID profile
+     * @param username  username
+     * @param tsData    tsData
+     * @throws Exception
+     */
+    private void keyIDResetProfile(String username, String tsData) throws Exception
+    {
+        debug.warning(String.format("Resetting KeyID profile for %s", username));
+        client.RemoveProfile(username, tsData, "").get();
+        //todo need error checking here when rest webservice bug is fixed.
     }
 
     /**
