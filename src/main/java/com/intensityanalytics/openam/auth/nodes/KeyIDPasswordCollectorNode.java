@@ -61,7 +61,7 @@ public class KeyIDPasswordCollectorNode extends SingleOutcomeNode
         @Attribute(order = 100)
         default String library()
         {
-            return "//keyidservices.tickstream.com/library/keyid-verbose";
+            return "";
         }
     }
 
