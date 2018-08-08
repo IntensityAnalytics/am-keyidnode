@@ -34,13 +34,14 @@ import java.util.List;
 import java.util.ResourceBundle;
 import static com.intensityanalytics.openam.auth.nodes.Constants.TSDATA;
 import static com.intensityanalytics.openam.auth.nodes.Utility.*;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
 /**
  * A node that validates a user's typing behavior using TickStream.KeyID
  */
 @Node.Metadata(outcomeProvider = KeyIDNode.OutcomeProvider.class,
-        configClass = KeyIDNode.Config.class)
+configClass = KeyIDNode.Config.class)
 public class KeyIDNode extends AbstractDecisionNode
 {
     private KeyIDSettings settings;
@@ -149,6 +150,8 @@ public class KeyIDNode extends AbstractDecisionNode
     {
         debug.message("KeyIDNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
+        JsonValue transientState = context.transientState.copy();
+        transientState.remove(PASSWORD);
 
         try
         {
@@ -161,7 +164,8 @@ public class KeyIDNode extends AbstractDecisionNode
                 !config.passiveEnrollment() &&
                 !loginResult.get("IsReady").getAsBoolean())
             {
-                return Action.goTo(ENROLL_OUTCOME).build();
+                return Action.goTo(ENROLL_OUTCOME).replaceSharedState(sharedState).replaceTransientState
+                (transientState).build();
             }
 
             // handle successful match and whether passive validation is enabled
@@ -175,7 +179,8 @@ public class KeyIDNode extends AbstractDecisionNode
                 if (config.resetProfile())
                     keyIDResetProfile(username, tsData);
 
-                return Action.goTo(TRUE_OUTCOME).build();
+                return Action.goTo(TRUE_OUTCOME).replaceSharedState(sharedState).replaceTransientState
+                (transientState).build();
             }
         }
         catch (Exception e)
@@ -185,7 +190,8 @@ public class KeyIDNode extends AbstractDecisionNode
             if(config.grantOnError())
             {
                 debug.error("Access grant on error");
-                return Action.goTo(TRUE_OUTCOME).build();
+                return Action.goTo(TRUE_OUTCOME).replaceSharedState(sharedState).replaceTransientState
+                (transientState).build();
             }
             else
                 throw new NodeProcessException("An error occured, please try again.");
@@ -193,7 +199,8 @@ public class KeyIDNode extends AbstractDecisionNode
 
         // default case is to return failure, rely on default login failed error message
         debug.warning("KeyID behavior match failure");
-        return Action.goTo(FALSE_OUTCOME).build();
+        return Action.goTo(FALSE_OUTCOME).replaceSharedState(sharedState).replaceTransientState(transientState)
+        .build();
     }
 
     /**

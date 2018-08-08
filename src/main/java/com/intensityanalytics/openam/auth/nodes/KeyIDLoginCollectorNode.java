@@ -36,6 +36,7 @@ import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import org.forgerock.guava.common.base.Strings;
+import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
@@ -45,7 +46,7 @@ import org.forgerock.openam.core.CoreWrapper;
  * A node which collects the username, password and KeyID typing data from the user via callbacks.
  */
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-               configClass = KeyIDLoginCollectorNode.Config.class)
+configClass = KeyIDLoginCollectorNode.Config.class)
 public class KeyIDLoginCollectorNode extends SingleOutcomeNode
 {
     private final Config config;
@@ -59,7 +60,7 @@ public class KeyIDLoginCollectorNode extends SingleOutcomeNode
         @Attribute(order = 100)
         default String library()
         {
-            return "//keyidservices.tickstream.com/library/keyid-verbose";
+            return "";
         }
     }
 
@@ -82,30 +83,31 @@ public class KeyIDLoginCollectorNode extends SingleOutcomeNode
     {
         debug.message("KeyIDLoginCollectorNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
+        JsonValue transientState = context.transientState.copy();
 
         context.getCallback(NameCallback.class)
-                .map(NameCallback::getName)
-                .filter(name -> !Strings.isNullOrEmpty(name))
-                .map(name -> sharedState.put(USERNAME, name));
+        .map(NameCallback::getName)
+        .filter(name -> !Strings.isNullOrEmpty(name))
+        .map(name -> sharedState.put(USERNAME, name));
 
         context.getCallback(PasswordCallback.class)
-                .map(PasswordCallback::getPassword)
-                .map(String::new)
-                .filter(password -> !Strings.isNullOrEmpty(password))
-                .map(password -> sharedState.put(PASSWORD, password));
+        .map(PasswordCallback::getPassword)
+        .map(String::new)
+        .filter(password -> !Strings.isNullOrEmpty(password))
+        .map(password -> transientState.put(PASSWORD, password));
 
         context.getCallback(HiddenValueCallback.class)
-                .map(HiddenValueCallback::getValue)
-                .filter(tsData -> !Strings.isNullOrEmpty(tsData))
-                .map(tsData -> sharedState.put(TSDATA, tsData));
+        .map(HiddenValueCallback::getValue)
+        .filter(tsData -> !Strings.isNullOrEmpty(tsData))
+        .map(tsData -> sharedState.put(TSDATA, tsData));
 
-        if (sharedState.get(PASSWORD).isNotNull() &&
+        if (transientState.get(PASSWORD).isNotNull() &&
             sharedState.get(USERNAME).isNotNull() &&
             sharedState.get(TSDATA).isNotNull())
         {
             debug.warning(String.format("Login submitted for user %s", sharedState.get(USERNAME)));
             debug.message(String.format("KeyID tsData: %s", sharedState.get(TSDATA)));
-            return goToNext().replaceSharedState(sharedState).build();
+            return goToNext().replaceSharedState(sharedState).replaceTransientState(transientState).build();
         }
         else
         {

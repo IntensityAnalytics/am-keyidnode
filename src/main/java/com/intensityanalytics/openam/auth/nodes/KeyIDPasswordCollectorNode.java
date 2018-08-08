@@ -61,7 +61,7 @@ public class KeyIDPasswordCollectorNode extends SingleOutcomeNode
         @Attribute(order = 100)
         default String library()
         {
-            return "//keyidservices.tickstream.com/library/keyid-verbose";
+            return "";
         }
     }
 
@@ -84,25 +84,26 @@ public class KeyIDPasswordCollectorNode extends SingleOutcomeNode
     {
         debug.message("KeyIDPasswordCollectorNode.process() called");
         JsonValue sharedState = context.sharedState.copy();
+        JsonValue transientState = context.transientState.copy();
 
         context.getCallback(PasswordCallback.class)
         .map(PasswordCallback::getPassword)
         .map(String::new)
         .filter(password -> !Strings.isNullOrEmpty(password))
-        .map(password -> sharedState.put(PASSWORD, password));
+        .map(password -> transientState.put(PASSWORD, password));
 
         context.getCallback(HiddenValueCallback.class)
         .map(HiddenValueCallback::getValue)
         .filter(tsData -> !Strings.isNullOrEmpty(tsData))
         .map(tsData -> sharedState.put(TSDATA, tsData));
 
-        if (sharedState.get(PASSWORD).isNotNull() &&
+        if (transientState.get(PASSWORD).isNotNull() &&
             sharedState.get(USERNAME).isNotNull() &&
             sharedState.get(TSDATA).isNotNull())
         {
             debug.warning(String.format("Password submitted for user %s", sharedState.get(USERNAME)));
             debug.message(String.format("KeyID tsData: %s", sharedState.get(TSDATA)));
-            return goToNext().replaceSharedState(sharedState).build();
+            return goToNext().replaceSharedState(sharedState).replaceTransientState(transientState).build();
         }
         else
         {
