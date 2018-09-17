@@ -41,15 +41,18 @@ The TickStream.KeyID node evaluates the login data captured by the login form. T
 
 Option | Description
 -- | --
-Connection Timeout | TickStream.KeyID web service connection timeout in milliseconds
-Reset Profile | Reset TickStream.KeyID profile after verification
-Passive Validation | Collect and evaluate typing behavior but always allow the user access
-Login Enrollment | Save profile data after evaluation and continue the enrollment process
-Passive Enrollment | Save profile data after evaluation and continue the login process
-Custom Threshold | Provide a custom threshold different than the TickStream.KeyID server setting
-Threshold Confidence | Custom threshold confidence value (integer)
-Threshold Fidelity | Custom threshold fidelity value (integer)
-Grant On Error | Allow access if there is an error communicating with the TickStream.KeyID web service
+**Connection Timeout** | TickStream.KeyID web service connection timeout in milliseconds
+**Reset Profile** | Reset TickStream.KeyID profile after verification
+**Validation / Enrollment** |
+Passive / None | Always allow the user access, do not enroll the profile
+Passive / Passive | Always allow the user access, passively enroll the profile
+Active / None | Gate user access, do not enroll the profile
+Active / Passive | Gate user access, passively enroll profile with each subsequent login
+Active / Active | Gate user access, actively enroll profile until it is complete
+**Custom Threshold** | Provide a custom threshold different than the TickStream.KeyID server setting
+**Threshold Confidence** | Custom threshold confidence value (integer)
+**Threshold Fidelity** | Custom threshold fidelity value (integer)
+**Grant On Error** | Allow access if there is an error communicating with the TickStream.KeyID web service
 
 ### ENROLLMENT ###
 

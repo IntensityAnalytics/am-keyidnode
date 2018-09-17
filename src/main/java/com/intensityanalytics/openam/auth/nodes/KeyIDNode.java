@@ -84,21 +84,9 @@ public class KeyIDNode extends AbstractDecisionNode
         }
 
         @Attribute(order = 500)
-        default Boolean passiveValidation()
+        default ValidationEnrollmentMode validationEnrollmentMode()
         {
-            return false;
-        }
-
-        @Attribute(order = 600)
-        default Boolean loginEnrollment()
-        {
-            return true;
-        }
-
-        @Attribute(order = 700)
-        default Boolean passiveEnrollment()
-        {
-            return false;
+            return ValidationEnrollmentMode.ACTIVE_ACTIVE;
         }
 
         @Attribute(order = 800)
@@ -160,8 +148,7 @@ public class KeyIDNode extends AbstractDecisionNode
             JsonObject loginResult = keyIDLogin(username, tsData);
 
             // handle active enrollment
-            if (config.loginEnrollment() &&
-                !config.passiveEnrollment() &&
+            if (config.validationEnrollmentMode() == ValidationEnrollmentMode.ACTIVE_ACTIVE &&
                 !loginResult.get("IsReady").getAsBoolean())
             {
                 return Action.goTo(ENROLL_OUTCOME).replaceSharedState(sharedState).replaceTransientState
@@ -169,11 +156,13 @@ public class KeyIDNode extends AbstractDecisionNode
             }
 
             // handle successful match and whether passive validation is enabled
-            if (loginResult.get("Match").getAsBoolean() || config.passiveValidation())
+            if (loginResult.get("Match").getAsBoolean() ||
+                config.validationEnrollmentMode() == ValidationEnrollmentMode.PASSIVE_NONE ||
+                config.validationEnrollmentMode() == ValidationEnrollmentMode.PASSIVE_PASSIVE)
             {
-                String msg = String.format("KeyID behavior match %b, passive validation %b",
+                String msg = String.format("KeyID behavior match %b, validation / enrollment mode %s",
                                            loginResult.get("Match").getAsBoolean(),
-                                           config.passiveValidation());
+                                           config.validationEnrollmentMode().toString());
                 debug.warning(msg);
 
                 if (config.resetProfile())
@@ -252,11 +241,29 @@ public class KeyIDNode extends AbstractDecisionNode
         settings.setUrl(config.url());
         settings.setLicense(config.authKey());
         settings.setCustomThreshold(config.customThreshold());
-        settings.setLoginEnrollment(config.loginEnrollment());
         settings.setThresholdConfidence(config.thresholdConfidence());
         settings.setThresholdFidelity(config.thresholdFidelity());
         settings.setTimeout(config.timeout());
+
+        if (config.validationEnrollmentMode() == ValidationEnrollmentMode.PASSIVE_PASSIVE ||
+            config.validationEnrollmentMode() == ValidationEnrollmentMode.ACTIVE_PASSIVE ||
+            config.validationEnrollmentMode() == ValidationEnrollmentMode.ACTIVE_ACTIVE)
+        {
+            settings.setLoginEnrollment(true);
+        }
+        else
+            settings.setLoginEnrollment(false);
+
         return settings;
+    }
+
+    public enum ValidationEnrollmentMode
+    {
+        PASSIVE_NONE,
+        PASSIVE_PASSIVE,
+        ACTIVE_NONE,
+        ACTIVE_PASSIVE,
+        ACTIVE_ACTIVE
     }
 
     /**

@@ -54,7 +54,7 @@ public class KeyIDNodePlugin extends AbstractNodeAmPlugin
     @Override
     public String getPluginVersion()
     {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     @Override
