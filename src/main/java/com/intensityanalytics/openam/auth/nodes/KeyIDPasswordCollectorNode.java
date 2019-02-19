@@ -19,29 +19,34 @@
 
 package com.intensityanalytics.openam.auth.nodes;
 
+import static com.intensityanalytics.openam.auth.nodes.Constants.KEYIDSCRIPT;
+import static com.intensityanalytics.openam.auth.nodes.Constants.TSDATA;
 import static org.forgerock.openam.auth.node.api.Action.send;
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
-import static com.intensityanalytics.openam.auth.nodes.Constants.*;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
-import java.util.List;
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.CoreWrapper;
+
+import com.google.common.base.Strings;
+import com.google.inject.assistedinject.Assisted;
+import com.sun.identity.authentication.callbacks.HiddenValueCallback;
+import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import com.sun.identity.shared.debug.Debug;
+
 import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.TextOutputCallback;
-
-import com.google.inject.assistedinject.Assisted;
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.authentication.callbacks.HiddenValueCallback;
-import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
-import org.forgerock.guava.common.base.Strings;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.sm.Attribute;
-import org.forgerock.openam.auth.node.api.*;
-import org.forgerock.openam.core.CoreWrapper;
 
 /**
  * A node which collects the username, password and KeyID typing data from the user via callbacks.
@@ -56,7 +61,7 @@ public class KeyIDPasswordCollectorNode extends SingleOutcomeNode
     private final static String DEBUG_FILE = "KeyIDLoginFormNode";
     protected Debug debug = Debug.getInstance(DEBUG_FILE);
 
-    interface Config
+    public interface Config
     {
         @Attribute(order = 100)
         default String library()

@@ -19,13 +19,13 @@
 
 package com.intensityanalytics.openam.auth.nodes;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.shared.debug.Debug;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.guava.common.collect.ImmutableList;
 import javax.inject.Inject;
 import com.intensityanalytics.keyid.*;
 import com.google.gson.JsonObject;

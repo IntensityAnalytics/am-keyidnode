@@ -31,12 +31,12 @@ import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
+
+import com.google.common.base.Strings;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
-import org.forgerock.guava.common.base.Strings;
-import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
@@ -55,7 +55,7 @@ public class KeyIDLoginCollectorNode extends SingleOutcomeNode
     private final static String DEBUG_FILE = "KeyIDLoginCollectorNode";
     protected Debug debug = Debug.getInstance(DEBUG_FILE);
 
-    interface Config
+    public interface Config
     {
         @Attribute(order = 100)
         default String library()
